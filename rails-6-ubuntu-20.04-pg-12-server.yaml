@@ -1,0 +1,52 @@
+#cloud-config
+
+# multipass launch -n the-vm-name-you-want --cloud-init rails-6-ubuntu-20.04-pg-12-server.yaml focal
+# https://multipass.run/
+
+timezone: UTC
+
+apt:
+  sources:
+    google-chrome.list:
+      source: "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main"
+      keyid: 78BD65473CB3BD13
+
+package_upgrade: true
+
+packages:
+  # All
+  - build-essential
+  - autogen
+  - autoconf
+  - libtool
+  - ruby
+  - ruby-dev
+  - sqlite3
+  - libsqlite3-dev
+  # Postgres server
+  - postgresql
+  - postgresql-server-dev-all
+  # Apparently for Nokogiri
+  - zlib1g-dev
+  - liblzma-dev
+  # JavaScript stuff
+  - nodejs
+  - yarn
+  - redis-server
+  # For development
+  # GraphViz support for Rails ERD http://voormedia.github.io/rails-erd/install.html
+  - graphviz
+  - google-chrome-stable
+# The above list does _not_ install what you need for Webkit builds for Capybara. Use Selenium.
+
+runcmd:
+  # The following was needed for dev boxes on Vagrant
+  # https://github.com/guard/listen/wiki/Increasing-the-amount-of-inotify-watchers
+  - echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+  # Leave the `pg` and `vagrant` roles for backwards compatibility.
+  - sudo -u postgres psql -c "create role pg with superuser createdb login password 'pg';"
+  - sudo -u postgres psql -c "create role vagrant with superuser createdb login password 'vagrant';"
+  - sudo -u postgres psql -c "create role ubuntu with superuser createdb login password 'ubuntu';"
+  - gem install bundler -v 2.1.4 --no-document
+  - gem install jekyll -v 4.0.0 --no-document
+  - gem install rails -v 6.0.2.2 --no-document
